@@ -1,0 +1,3 @@
+:module +Configuration.Dotenv
+:module +System.Environment
+Configuration.Dotenv.loadFile Configuration.Dotenv.defaultConfig
