@@ -3,6 +3,8 @@ module Main (main) where
 import Control.Applicative
 import Data.Char
 import Data.Text as T
+import System.Environment (getEnv)
+import Configuration.Dotenv (defaultConfig, loadFile)
 import Telegram.Bot.API ()
 import qualified Telegram.Bot.API as Telegram
 import Telegram.Bot.Simple
@@ -77,13 +79,28 @@ bot =
                     replyText (validateAnswer word msg)
                 else
                   model {gameState = NotPlaying} <# do
-                    replyText (pack "you got the right answer")
+                    replyText (validateAnswer word msg)
 
 validateAnswer :: Text -> Text -> Text
 validateAnswer correct guessed
   | not (T.all isLetter guessed) = pack "only letters are allowed"
   | T.length guessed /= 5 = pack "word should be 5 letters" <> correct
-  | otherwise = pack "incorrect"
+  | otherwise = answerFeedBack correct guessed
+
+answerFeedBack :: Text -> Text -> Text
+answerFeedBack correct guessed = T.unlines [T.toUpper letterLine, emojiLine]
+  where
+    charFeedBack :: Char -> Char -> Char
+    charFeedBack c g
+      | c == g = '🟩'
+      | g `T.elem` correct = '🟨'
+      | otherwise = '⬛'
+
+    centerUnderEmoji :: Char -> Text
+    centerUnderEmoji c = T.concat [pack "  ", T.singleton c, pack "  "]
+
+    letterLine = T.concat $ Prelude.map centerUnderEmoji (T.unpack guessed)
+    emojiLine = T.zipWith charFeedBack correct guessed
 
 run :: Telegram.Token -> IO ()
 run token = do
@@ -91,4 +108,7 @@ run token = do
   startBot_ (traceBotDefault (conversationBot Telegram.updateChatId bot)) env
 
 main :: IO ()
-main = getEnvToken "TELEGRAM_TOKEN" >>= run
+main = do
+  _ <- loadFile defaultConfig
+  token <- getEnv "TELEGRAM_TOKEN"
+  run (Telegram.Token (pack token))
