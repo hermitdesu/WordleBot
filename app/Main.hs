@@ -1,8 +1,8 @@
 module Main (main) where
 
 import Control.Monad.IO.Class (liftIO)
-import Configuration.Dotenv (defaultConfig, loadFile)
 import WordList (getRandomWord)
+import Configuration.Dotenv (defaultConfig, loadFile)
 import Control.Applicative
 import Data.Char
 import Data.Text as T
