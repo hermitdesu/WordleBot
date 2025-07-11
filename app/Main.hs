@@ -1,5 +1,7 @@
 module Main (main) where
 
+import Control.Monad.IO.Class (liftIO)
+import WordList (getRandomWord)
 import Configuration.Dotenv (defaultConfig, loadFile)
 import Control.Applicative
 import Data.Char
@@ -31,6 +33,7 @@ data Action
   | Help
   | StartGame
   | StopGame
+  | StartGameWithWord Text
   | TextMessage Text
   deriving (Show)
 
@@ -76,7 +79,9 @@ bot =
                   \/start - to restart bot."
               )
         StartGame ->
-          model {gameState = WaitingForAnswer (pack "apple") 5} <# do
+          model <# liftIO (StartGameWithWord <$> getRandomWord)
+        StartGameWithWord word ->
+          model {gameState = WaitingForAnswer word 5} <# do
             replyText (pack "Guess the word!")
         StopGame ->
           case gameState model of
