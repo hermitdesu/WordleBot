@@ -1,4 +1,4 @@
-FROM haskell:9.2.8
+FROM haskell:9.8.4
 
 RUN apt-get update && apt-get install -y libpq-dev g++ libtinfo-dev
 
