@@ -6,8 +6,7 @@ WORKDIR /app
 COPY . /app
 
 RUN stack setup
-RUN stack build --only-dependencies
-RUN stack build --copy-bins
+RUN stack build
 
 ENV PATH="/root/.local/bin:${PATH}"
 
