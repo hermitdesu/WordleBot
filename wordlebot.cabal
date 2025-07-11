@@ -36,6 +36,7 @@ library
   build-depends:
       base >=4.7 && <5
     , dotenv
+    , random
     , telegram-bot-api
     , telegram-bot-simple
     , text
@@ -44,6 +45,7 @@ library
 executable wordlebot-exe
   main-is: Main.hs
   other-modules:
+      WordList
       Paths_wordlebot
   autogen-modules:
       Paths_wordlebot
@@ -53,6 +55,7 @@ executable wordlebot-exe
   build-depends:
       base >=4.7 && <5
     , dotenv
+    , random
     , telegram-bot-api
     , telegram-bot-simple
     , text
