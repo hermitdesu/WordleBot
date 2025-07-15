@@ -107,7 +107,7 @@ bot =
                         then
                           model {gameState = NotPlaying} <# do
                             reply $
-                              (toReplyMessage (feedback <> pack "\nYou lost, no more tries."))
+                              (toReplyMessage (feedback <> pack "\nYou lost, no more tries." <> pack "\n Correct answer:" <>word))
                                 {replyMessageReplyMarkup = Just (SomeReplyKeyboardMarkup wordleKeyboard)}
                         else
                           model {gameState = WaitingForAnswer word new_cnt} <# do
