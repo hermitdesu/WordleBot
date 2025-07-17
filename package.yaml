@@ -26,6 +26,7 @@ dependencies:
   - dotenv
   - text
   - random
+  - mtl
 
 ghc-options:
   - -Wall
@@ -39,7 +40,7 @@ ghc-options:
   - -Wredundant-constraints
 
 library:
-  source-dirs: src
+  source-dirs: app
 
 executables:
   wordlebot-exe:
