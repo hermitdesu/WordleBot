@@ -8,27 +8,37 @@ import Data.Text as T                         (pack, Text, toLower, unpack, conc
 import Control.Applicative
 import Control.Monad.IO.Class                 (liftIO)
 
-import WordList                               (getRandomWord, isInList)
-import Messages                               (startMessage, helpMessage, stopGameMessage, stopGameFailMessage, startGameMessage, notInListMessage, gameWonMessage, triesLeftMessage, triesLeftMessage, noMoreTriesMessage)
-import Types                                  (Model(..), Action(..), GameState(..), GameState(InGame, Sleep))
+import WordList                               (getRandomWord, isInList, getRandomWordForDifficulty, isInListForDifficulty)
+import Messages                               (startMessage, helpMessage, stopGameMessage, stopGameFailMessage, startGameMessage, notInListMessage, gameWonMessage, triesLeftMessage, triesLeftMessage, noMoreTriesMessage, difficultyLevelMessage, selectDifficultyMessage, difficultySelectedMessage)
+import Types                                  (Model(..), Action(..), GameState(..), GameState(InGame, Sleep, SelectingDifficulty), DifficultyLevel(..))
 import Database.Pool
 
 import qualified Database.User as DB
 import Data.Maybe (fromMaybe)
 import Control.Monad.IO.Class (liftIO)
 
-
-gameRounds :: Int
-gameRounds = 5
+-- Функция для получения количества попыток в зависимости от уровня сложности
+getAttemptsForDifficulty :: DifficultyLevel -> Int
+getAttemptsForDifficulty Easy = 6
+getAttemptsForDifficulty Medium = 5
+getAttemptsForDifficulty Hard = 4
 
 handleUpdate :: Model -> Telegram.Update -> Maybe Action
-handleUpdate _ =
+handleUpdate model =
   parseUpdate $
       Start <$ command (pack "start")
       <|> Help <$ command (pack "help")
       <|> StartGame <$ command (pack "game")
       <|> StopGame <$ command (pack "stop")
-      <|> TextMessage <$> plainText
+      <|> DifficultyLevel <$ command (pack "difficulty_level")
+      <|> (parseDifficultySelection <$> plainText)
+  where
+    parseDifficultySelection :: Text -> Action
+    parseDifficultySelection text
+      | text == pack "Easy" = SelectDifficulty Easy
+      | text == pack "Medium" = SelectDifficulty Medium
+      | text == pack "Hard" = SelectDifficulty Hard
+      | otherwise = TextMessage text
 
 handleAction :: Action -> Model -> Eff Action Model
 handleAction action model = 
@@ -38,10 +48,12 @@ handleAction action model =
     StartGame -> handleStartGame model
     StopGame -> handleStopGame model
     StartGameWithWord word -> 
-        let newModel = model { gameState = InGame word gameRounds []}
+        let attempts = getAttemptsForDifficulty (currentDifficulty model)
+            newModel = model { gameState = InGame word attempts []}
         in newModel <# replyText startGameMessage
     TextMessage word -> handleGuess model word
-
+    DifficultyLevel -> handleDifficultyLevel model
+    SelectDifficulty diff -> handleSelectDifficulty diff model
 
 handleStart :: Model -> Eff Action Model
 handleStart model = model <# do
@@ -56,15 +68,31 @@ handleHelp model =
 
 handleStartGame :: Model -> Eff Action Model
 handleStartGame model = 
-  model <# liftIO (StartGameWithWord <$> getRandomWord)
+  model <# liftIO (getRandomWordForDifficulty (currentDifficulty model) >>= return . StartGameWithWord)
 
+handleDifficultyLevel :: Model -> Eff Action Model
+handleDifficultyLevel model =
+  model <# do
+    reply $
+      (toReplyMessage selectDifficultyMessage)
+        { replyMessageReplyMarkup = Just (Telegram.SomeReplyKeyboardMarkup difficultyKeyboard) }
+
+handleSelectDifficulty :: DifficultyLevel -> Model -> Eff Action Model
+handleSelectDifficulty diff model =
+  let newModel = model { currentDifficulty = diff, gameState = Sleep }
+  in newModel <# do
+      reply $
+        (toReplyMessage (difficultySelectedMessage diff))
+          { replyMessageReplyMarkup = Just (Telegram.SomeReplyKeyboardMarkup wordleKeyboard) }
 
 handleStopGame :: Model -> Eff Action Model
 handleStopGame model =
   case gameState model of
     InGame {} ->
       model {gameState = Sleep} <# do
-        replyText stopGameMessage
+        reply $
+          (toReplyMessage stopGameMessage)
+            { replyMessageReplyMarkup = Just (Telegram.SomeReplyKeyboardMarkup wordleKeyboard) }
     Sleep ->
       model <# do
         replyText stopGameFailMessage
@@ -75,7 +103,7 @@ handleGuess model guessedRaw =
   in case gameState model of
     Sleep -> pure model
     InGame target cnt guesslist
-      | not (isInList guessed) ->
+      | not (isInListForDifficulty (currentDifficulty model) guessed) ->
         model <# do
           replyText notInListMessage
       | guessed == target ->
@@ -86,7 +114,9 @@ handleGuess model guessedRaw =
                     newGuesses
                     (map (`getColorFeedback` target) newGuesses)
         in model { gameState = Sleep } <# do
-          replyText (allFeedback <> gameWonMessage)
+          reply $
+            (toReplyMessage (allFeedback <> gameWonMessage))
+              { replyMessageReplyMarkup = Just (Telegram.SomeReplyKeyboardMarkup wordleKeyboard) }
         
       | otherwise ->
         let
@@ -98,7 +128,9 @@ handleGuess model guessedRaw =
         in
           if cnt <= 1
             then model { gameState = Sleep } <# do
-              replyText (allFeedback <> noMoreTriesMessage <> target)
+              reply $
+                (toReplyMessage (allFeedback <> noMoreTriesMessage <> target))
+                  { replyMessageReplyMarkup = Just (Telegram.SomeReplyKeyboardMarkup wordleKeyboard) }
             else model { gameState = InGame target (cnt - 1) newGuesses } <# do
               replyText (allFeedback <> triesLeftMessage <> pack (show (cnt - 1)))
 
@@ -136,6 +168,22 @@ getColorFeedback guessed correct =
     feedback = yellows (unpack guessed) greenMarks remainder
   in T.concat feedback
 
+-- Клавиатура для выбора уровня сложности
+difficultyKeyboard :: Telegram.ReplyKeyboardMarkup
+difficultyKeyboard =
+  Telegram.ReplyKeyboardMarkup
+    { Telegram.replyKeyboardMarkupKeyboard =
+        [ [ Telegram.KeyboardButton (pack "Easy") Nothing Nothing Nothing Nothing Nothing Nothing
+          , Telegram.KeyboardButton (pack "Medium") Nothing Nothing Nothing Nothing Nothing Nothing
+          , Telegram.KeyboardButton (pack "Hard") Nothing Nothing Nothing Nothing Nothing Nothing
+          ]
+        ]
+    , Telegram.replyKeyboardMarkupResizeKeyboard = Just True
+    , Telegram.replyKeyboardMarkupOneTimeKeyboard = Just True
+    , Telegram.replyKeyboardMarkupSelective = Nothing
+    , Telegram.replyKeyboardMarkupInputFieldSelector = Nothing
+    , Telegram.replyKeyboardMarkupIsPersistent = Nothing
+    }
 
 wordleKeyboard :: Telegram.ReplyKeyboardMarkup
 wordleKeyboard =
@@ -143,6 +191,9 @@ wordleKeyboard =
     { Telegram.replyKeyboardMarkupKeyboard =
         [ [ Telegram.KeyboardButton (pack "/game") Nothing Nothing Nothing Nothing Nothing Nothing
           , Telegram.KeyboardButton (pack "/help") Nothing Nothing Nothing Nothing Nothing Nothing
+          ]
+        , [ Telegram.KeyboardButton (pack "/stop") Nothing Nothing Nothing Nothing Nothing Nothing
+          , Telegram.KeyboardButton (pack "/difficulty_level") Nothing Nothing Nothing Nothing Nothing Nothing
           ]
         ]
     , Telegram.replyKeyboardMarkupResizeKeyboard = Just True
