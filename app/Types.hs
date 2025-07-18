@@ -1,21 +1,31 @@
 module Types (Action(..), Model(..), GameState(..)) where
 
 import Data.Text (Text)
+import Database.Pool (DbPool)
+import Telegram.Bot.API as Telegram
+
+type TargetWord = Text
+
+type AmountOfTries = Int
+
+type ListOfGuessed = [Text]
 
 data GameState
   = Sleep
-  | InGame Text Int
+  | InGame TargetWord AmountOfTries ListOfGuessed
   deriving (Show)
 
+data Model = Model
+  { gameState :: GameState
+  , dbPool :: DbPool
+  }
 
-data Model = Model 
-  { 
-    gameState :: GameState 
-  } deriving (Show)
+instance Show Model where
+  show (Model gs _) = "Model { gameState = " ++ show gs ++ ", dbPool = <pool> }"
 
 
 data Action
-  = Start
+  = Start Telegram.Updates
   | Help
   | StartGame
   | StopGame

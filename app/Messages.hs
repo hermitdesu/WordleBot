@@ -1,4 +1,4 @@
-module Messages (startMessage, helpMessage, stopGameMessage, stopGameFailMessage, startGameMessage, gameWonMessage, gameLostMessage) where
+module Messages (startMessage, helpMessage, stopGameMessage, stopGameFailMessage, startGameMessage, gameWonMessage, triesLeftMessage, noMoreTriesMessage, notInListMessage) where
 
 import Data.Text (Text, pack)
 
@@ -26,7 +26,13 @@ stopGameFailMessage :: Text
 stopGameFailMessage = pack "You are not in game."
 
 gameWonMessage :: Text
-gameWonMessage = pack "You have won, congrats!"
+gameWonMessage = pack "\nYou have won, congrats!"
 
-gameLostMessage :: Text
-gameLostMessage = pack "You have lost("
+notInListMessage :: Text
+notInListMessage = pack "No such word in our list of words."
+
+triesLeftMessage :: Text
+triesLeftMessage = pack "\nTries left: "
+
+noMoreTriesMessage :: Text
+noMoreTriesMessage = pack "\nNo more tries left, you lost( \nCorrect word was: "

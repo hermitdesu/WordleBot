@@ -1,4 +1,4 @@
-module WordList (wordList, getRandomWord) where
+module WordList (getRandomWord, isInList) where
 
 import System.Random (randomRIO)
 import Data.Text (Text, pack)
@@ -15,3 +15,6 @@ getRandomWord :: IO Text
 getRandomWord = do
   idx <- randomRIO (0, length wordList - 1)
   return $ wordList !! idx
+
+isInList :: Text -> Bool
+isInList word = word `elem` wordList

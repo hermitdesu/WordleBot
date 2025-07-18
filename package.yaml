@@ -27,6 +27,9 @@ dependencies:
   - text
   - random
   - mtl
+  - containers
+  - sqlite-simple
+  - resource-pool
 
 ghc-options:
   - -Wall
