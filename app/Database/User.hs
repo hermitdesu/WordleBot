@@ -1,8 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Database.User (insertUser, getUserById, User) where
+module Database.User (insertUser, getUserById, User, updateUser) where
 
 import Database.SQLite.Simple
+
+-- User data type
 
 data User = User {
     userId :: Int,
@@ -10,12 +12,17 @@ data User = User {
     streak :: Int
 }
 
+-- instance of FromWhere for User
+
 instance FromRow User where
   fromRow = do
     userId <- field
     score <- field
     streak <- field
     return (User userId score streak)
+
+
+-- Some cruds
 
 insertUser :: Connection -> User -> IO ()
 insertUser conn (User id score streak) =

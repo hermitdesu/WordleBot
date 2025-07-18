@@ -4,6 +4,7 @@ module Database.Migrations (runMigrations) where
 
 import Database.SQLite.Simple
 
+-- func to create tables
 runMigrations :: Connection -> IO ()
 runMigrations conn = do
   execute_ conn

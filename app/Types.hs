@@ -1,8 +1,9 @@
-module Types (Action(..), Model(..), GameState(..), DifficultyLevel(..)) where
+module Types (Action(..), Model(..), GameState(..), DifficultyLevel(..), Language(..)) where
 
 import Data.Text (Text)
-import Database.Pool (DbPool)
-import Telegram.Bot.API as Telegram
+
+
+-- some types and synonyms to declare model
 
 type TargetWord = Text
 
@@ -16,6 +17,11 @@ data DifficultyLevel
   | Hard
   deriving (Show, Eq)
 
+data Language
+  = Ru
+  | En
+  deriving (Show)
+
 data GameState
   = Sleep
   | InGame TargetWord AmountOfTries ListOfGuessed
@@ -25,7 +31,10 @@ data GameState
 data Model = Model
   { gameState :: GameState
   , currentDifficulty :: DifficultyLevel
+  , language :: Language
   } deriving (Show)
+
+-- Action enumeration for telegram bot state
 
 data Action
   = Start
@@ -35,5 +44,6 @@ data Action
   | StartGameWithWord Text
   | TextMessage Text
   | DifficultyLevel
+  | SetLanguage Language
   | SelectDifficulty DifficultyLevel
   deriving (Show)

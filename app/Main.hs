@@ -7,9 +7,10 @@ import Telegram.Bot.Simple.Debug              (traceBotDefault)
 import System.Environment                     (getEnv)
 import Data.Text as T                         (pack)
 
-import Types                                  (Model(..), Action(..), GameState(..), GameState(Sleep), DifficultyLevel(..))
+import Types                                  (Model(..), Action(..), GameState(..), GameState(Sleep), DifficultyLevel(..), Language(..))
 import Handlers                               (handleUpdate, handleAction)
 
+-- bot model
 bot :: Model -> BotApp Model Action
 bot initialModel =
   BotApp
@@ -19,9 +20,10 @@ bot initialModel =
       botJobs = []
     }
 
+-- func to load env and to start bot asynchronously
 run :: Telegram.Token -> IO ()
 run token = do
-  let initialModel = Model Sleep Medium
+  let initialModel = Model Sleep Medium Ru
   env <- Telegram.defaultTelegramClientEnv token
   startBot_ (traceBotDefault (conversationBot Telegram.updateChatId (bot initialModel))) env
 

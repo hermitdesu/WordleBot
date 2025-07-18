@@ -1,54 +1,109 @@
-module Messages (startMessage, helpMessage, stopGameMessage, stopGameFailMessage, startGameMessage, gameWonMessage, triesLeftMessage, noMoreTriesMessage, notInListMessage, difficultyLevelMessage, selectDifficultyMessage, difficultySelectedMessage) where
+module Messages
+  ( startMessage
+  , helpMessage
+  , stopGameMessage
+  , stopGameFailMessage
+  , startGameMessage
+  , gameWonMessage
+  , triesLeftMessage
+  , noMoreTriesMessage
+  , notInListMessage
+  , difficultyLevelMessage
+  , selectDifficultyMessage
+  , difficultySelectedMessage
+  ) where
 
 import Data.Text (Text, pack)
-import Types (DifficultyLevel(..))
+import Types (DifficultyLevel(..), Language(..))
 
-startMessage :: Text
-startMessage = pack "Hello, i'm WordleBot! To start the game type /game."
+-- functions to get text for messages on russian or english
 
-helpMessage :: Text
-helpMessage = pack"Wordle is game in which you need to guess the word by receiving feedback on letters. \n\
-                  \🟩 - letter is present in right position \n\
-                  \🟨 - letter is present \n\
-                  \⬛ - no such letter \n\
-                  \Available commands: \n\
-                  \/game - to start the game \n\
-                  \/stop - to stop the game \n\
-                  \/help - inforamtion about commands \n\
-                  \/start - to restart bot\n\
-                  \/difficulty_level - set difficulty level."
+startMessage :: Language -> Text
+startMessage lang = case lang of
+  En -> pack "Hello, I'm WordleBot! To start the game type /game."
+  Ru -> pack "Привет! Я WordleBot! Чтобы начать игру, напиши /game."
 
-startGameMessage :: Text
-startGameMessage = pack "Game started!"
+helpMessage :: Language -> Text
+helpMessage lang = case lang of
+  En -> pack "Wordle is a game where you guess the word by receiving feedback on letters.\n\
+             \🟩 - letter in correct position\n\
+             \🟨 - letter is present but misplaced\n\
+             \⬛ - letter not in word\n\
+             \Available commands:\n\
+             \/game - start the game\n\
+             \/stop - stop the game\n\
+             \/help - command information\n\
+             \/start - restart the bot\n\
+             \/difficulty_level - set difficulty level."
+  Ru -> pack "Wordle — это игра, где ты угадываешь слово, получая подсказки:\n\
+             \🟩 — буква на правильной позиции\n\
+             \🟨 — буква есть, но не на месте\n\
+             \⬛ — такой буквы нет\n\
+             \Доступные команды:\n\
+             \/game — начать игру\n\
+             \/stop — остановить игру\n\
+             \/help — информация о командах\n\
+             \/start — перезапустить бота\n\
+             \/difficulty_level — выбрать уровень сложности."
 
-stopGameMessage :: Text
-stopGameMessage = pack "Game was aborted."
+startGameMessage :: Language -> Text
+startGameMessage lang = case lang of
+  En -> pack "Game started!"
+  Ru -> pack "Игра началась!"
 
-stopGameFailMessage :: Text
-stopGameFailMessage = pack "You are not in game."
+stopGameMessage :: Language -> Text
+stopGameMessage lang = case lang of
+  En -> pack "Game was aborted."
+  Ru -> pack "Игра была остановлена."
 
-gameWonMessage :: Text
-gameWonMessage = pack "\nYou have won, congrats!"
+stopGameFailMessage :: Language -> Text
+stopGameFailMessage lang = case lang of
+  En -> pack "You are not in game."
+  Ru -> pack "Сейчас вы не в игре."
 
-notInListMessage :: Text
-notInListMessage = pack "I don't understand.."
+gameWonMessage :: Language -> Text
+gameWonMessage lang = case lang of
+  En -> pack "\nYou have won, congrats!"
+  Ru -> pack "\nВы победили, поздравляем!"
 
-triesLeftMessage :: Text
-triesLeftMessage = pack "\nTries left: "
+notInListMessage :: Language -> Text
+notInListMessage lang = case lang of
+  En -> pack "There is no such word in our wordlist."
+  Ru -> pack "Такого слова нет в нашем словаре."
 
-noMoreTriesMessage :: Text
-noMoreTriesMessage = pack "\nNo more tries left, you lost( \nCorrect word was: "
+triesLeftMessage :: Language -> Text
+triesLeftMessage lang = case lang of
+  En -> pack "\nTries left: "
+  Ru -> pack "\nОсталось попыток: "
 
-difficultyLevelMessage :: Text
-difficultyLevelMessage = pack "Difficulty level settings:\n\
-                  \Easy - 6 attempts\n\
-                  \Medium - 5 attempts\n\
-                  \Hard - 4 attempts"
+noMoreTriesMessage :: Language -> Text
+noMoreTriesMessage lang = case lang of
+  En -> pack "\nNo more tries left, you lost( \nCorrect word was: "
+  Ru -> pack "\nПопытки закончились, вы проиграли( \nПравильное слово: "
 
-selectDifficultyMessage :: Text
-selectDifficultyMessage = pack "Select difficulty level:"
+difficultyLevelMessage :: Language -> Text
+difficultyLevelMessage lang = case lang of
+  En -> pack "Difficulty level settings:\n\
+             \Easy - 6 attempts\n\
+             \Medium - 5 attempts\n\
+             \Hard - 4 attempts"
+  Ru -> pack "Настройки уровня сложности:\n\
+             \Легкий — 6 попыток\n\
+             \Средний — 5 попыток\n\
+             \Сложный — 4 попытки"
 
-difficultySelectedMessage :: DifficultyLevel -> Text
-difficultySelectedMessage Easy = pack "Easy difficulty selected! You have 6 attempts."
-difficultySelectedMessage Medium = pack "Medium difficulty selected! You have 5 attempts."
-difficultySelectedMessage Hard = pack "Hard difficulty selected! You have 4 attempts."
+selectDifficultyMessage :: Language -> Text
+selectDifficultyMessage lang = case lang of
+  En -> pack "Select difficulty level:"
+  Ru -> pack "Выберите уровень сложности:"
+
+difficultySelectedMessage :: Language -> DifficultyLevel -> Text
+difficultySelectedMessage lang level = case lang of
+  En -> case level of
+    Easy   -> pack "Easy difficulty selected! You have 6 attempts."
+    Medium -> pack "Medium difficulty selected! You have 5 attempts."
+    Hard   -> pack "Hard difficulty selected! You have 4 attempts."
+  Ru -> case level of
+    Easy   -> pack "Выбран лёгкий уровень! У вас 6 попыток."
+    Medium -> pack "Выбран средний уровень! У вас 5 попыток."
+    Hard   -> pack "Выбран сложный уровень! У вас 4 попытки."
