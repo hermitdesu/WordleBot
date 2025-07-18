@@ -8,10 +8,7 @@ import System.Environment                     (getEnv)
 import Data.Text as T                         (pack)
 
 import Types                                  (Model(..), Action(..), GameState(..), GameState(Sleep))
-import Handlers (handleUpdate, handleAction)
-
-import Database.Pool (withDbPool, getConn)
-import Database.Migrations (runMigrations)
+import Handlers                               (handleUpdate, handleAction)
 
 bot :: Model -> BotApp Model Action
 bot initialModel =
@@ -23,16 +20,10 @@ bot initialModel =
     }
 
 run :: Telegram.Token -> IO ()
-run token =
-  withDbPool $ \pool -> do
-    getConn pool $ \conn -> runMigrations conn
-
-    let initialModel = Model Sleep pool
-
-    env <- Telegram.defaultTelegramClientEnv token
-
-    startBot_ (traceBotDefault (conversationBot Telegram.updateChatId (bot initialModel))) env
-
+run token = do
+  let initialModel = Model Sleep
+  env <- Telegram.defaultTelegramClientEnv token
+  startBot_ (traceBotDefault (conversationBot Telegram.updateChatId (bot initialModel))) env
 
 main :: IO ()
 main = do

@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Database.User (insertUser, getUserById) where
+module Database.User (insertUser, getUserById, User) where
 
 import Database.SQLite.Simple
 

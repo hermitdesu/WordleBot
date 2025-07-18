@@ -17,15 +17,10 @@ data GameState
 
 data Model = Model
   { gameState :: GameState
-  , dbPool :: DbPool
-  }
-
-instance Show Model where
-  show (Model gs _) = "Model { gameState = " ++ show gs ++ ", dbPool = <pool> }"
-
+  } deriving (Show)
 
 data Action
-  = Start Telegram.Updates
+  = Start
   | Help
   | StartGame
   | StopGame

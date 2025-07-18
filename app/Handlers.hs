@@ -22,9 +22,9 @@ gameRounds :: Int
 gameRounds = 5
 
 handleUpdate :: Model -> Telegram.Update -> Maybe Action
-handleUpdate _model update =
+handleUpdate _ =
   parseUpdate $
-  Start update <$ command (pack "start") update
+      Start <$ command (pack "start")
       <|> Help <$ command (pack "help")
       <|> StartGame <$ command (pack "game")
       <|> StopGame <$ command (pack "stop")
@@ -33,7 +33,7 @@ handleUpdate _model update =
 handleAction :: Action -> Model -> Eff Action Model
 handleAction action model = 
   case action of
-    Start update -> handleStart model
+    Start -> handleStart model
     Help -> handleHelp model
     StartGame -> handleStartGame model
     StopGame -> handleStopGame model
@@ -43,19 +43,11 @@ handleAction action model =
     TextMessage word -> handleGuess model word
 
 
-handleStart :: Telegram.Update -> Model -> Eff Action Model
-handleStart update model = model <# do
+handleStart :: Model -> Eff Action Model
+handleStart model = model <# do
   reply $
     (toReplyMessage startMessage)
       { replyMessageReplyMarkup = Just (Telegram.SomeReplyKeyboardMarkup wordleKeyboard) }
-
-  let pool = dbPool model
-  case Telegram.updateMessage update >>= Telegram.messageFrom of
-    Just user -> do
-      let userId = Telegram.unUserId (Telegram.userId user)
-      liftIO $ getConn pool $ \conn ->
-        DB.insertUser conn (DB.User userId 0 0)
-    Nothing -> pure ()
 
 handleHelp :: Model -> Eff Action Model
 handleHelp model =
