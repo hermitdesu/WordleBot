@@ -1,16 +1,23 @@
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use <&>" #-}
 module Handlers (handleAction, handleUpdate) where
 
 import qualified Telegram.Bot.API as Telegram
-import Telegram.Bot.Simple.UpdateParser 
+import Telegram.Bot.Simple.UpdateParser       ( command, parseUpdate, plainText ) 
 import Telegram.Bot.Simple         
 import Data.Text as T                         (pack, Text, toLower, unpack, concat, intercalate)
-import Control.Applicative
+import Control.Applicative                    (Alternative((<|>)))
 import Control.Monad.IO.Class                 (liftIO)
 
-import WordList                               (getRandomWordForDifficulty, isInListForDifficulty, isInList)
-import Messages                               (startMessage, helpMessage, stopGameMessage, stopGameFailMessage, startGameMessage, notInListMessage, gameWonMessage, triesLeftMessage, triesLeftMessage, noMoreTriesMessage, difficultyLevelMessage, selectDifficultyMessage, difficultySelectedMessage)
-import Types                                  (Model(..), Action(..), GameState(..), GameState(InGame, Sleep), DifficultyLevel(..), Language(..))
+import WordList                               (getRandomWordForDifficulty, isInList)
+import Messages                               (startMessage, helpMessage, stopGameMessage, stopGameFailMessage, 
+                                              startGameMessage, notInListMessage, gameWonMessage, triesLeftMessage, 
+                                              triesLeftMessage, noMoreTriesMessage, 
+                                              selectDifficultyMessage, difficultySelectedMessage)
+import Types                                  (Model(..), Action(..), GameState(..), GameState(InGame, Sleep), 
+                                              DifficultyLevel(..), Language(..))
 
 -- get number of attempts based on difficulty level
 getAttemptsForDifficulty :: DifficultyLevel -> Int
@@ -22,13 +29,13 @@ getAttemptsForDifficulty Hard = 4
 handleUpdate :: Model -> Telegram.Update -> Maybe Action
 handleUpdate _ =
   parseUpdate $
-      Start <$ command (pack "start")                     -- /start command
-      <|> Help <$ command (pack "help")                   -- /help command
-      <|> StartGame <$ command (pack "game")              -- /game command
-      <|> StopGame <$ command (pack "stop")               -- /stop command
-      <|> DifficultyLevel <$ command (pack "difficulty_level") -- /difficulty_level command
-      <|> (parsePlain <$> plainText)                       -- parse plain text messages (buttons)
-  where 
+      Start <$ command (pack "start")             
+      <|> Help <$ command (pack "help")              
+      <|> StartGame <$ command (pack "game")        
+      <|> StopGame <$ command (pack "stop")            
+      <|> DifficultyLevel <$ command (pack "difficulty_level") 
+      <|> (parsePlain <$> plainText)                      
+  where
     -- handle reply keyboard buttons text
     parsePlain :: Text -> Action
     parsePlain text
@@ -43,18 +50,18 @@ handleUpdate _ =
 handleAction :: Action -> Model -> Eff Action Model
 handleAction action model = 
   case action of
-    Start -> handleStart model                       -- start command handler
-    Help -> handleHelp model                         -- help command handler
-    StartGame -> handleStartGame model               -- start game handler
-    StopGame -> handleStopGame model                 -- stop game handler
-    StartGameWithWord word ->                        -- start game with selected word
+    Start -> handleStart model 
+    Help -> handleHelp model
+    StartGame -> handleStartGame model
+    StopGame -> handleStopGame model
+    StartGameWithWord word -> 
         let attempts = getAttemptsForDifficulty (currentDifficulty model)
             newModel = model { gameState = InGame word attempts []}
         in newModel <# replyText (startGameMessage (language model))
-    TextMessage word -> handleGuess model word      -- handle guess word
-    DifficultyLevel -> handleDifficultyLevel model  -- show difficulty selection keyboard
-    SelectDifficulty diff -> handleSelectDifficulty diff model -- handle difficulty selection
-    SetLanguage lang -> handleSelectLanguage lang model        -- handle language change
+    TextMessage word -> handleGuess model word
+    DifficultyLevel -> handleDifficultyLevel model 
+    SelectDifficulty diff -> handleSelectDifficulty diff model
+    SetLanguage lang -> handleSelectLanguage lang model 
 
 -- send start message with reply keyboard
 handleStart :: Model -> Eff Action Model
@@ -72,7 +79,9 @@ handleHelp model =
 -- start new game by requesting random word
 handleStartGame :: Model -> Eff Action Model
 handleStartGame model = 
-  model <# liftIO (getRandomWordForDifficulty (language model) (currentDifficulty model) >>= return . StartGameWithWord)
+  model <# liftIO (getRandomWordForDifficulty (language model) 
+                                              (currentDifficulty model) 
+                  >>= return . StartGameWithWord)
 
 -- show difficulty selection keyboard
 handleDifficultyLevel :: Model -> Eff Action Model
@@ -124,12 +133,12 @@ handleGuess :: Model -> Text -> Eff Action Model
 handleGuess model guessedRaw =
   let guessed = T.toLower guessedRaw
   in case gameState model of
-    Sleep -> pure model                                         -- if no game, ignore guess
+    Sleep -> pure model
     InGame target cnt guesslist
-      | not (isInList (language model) guessed) ->             -- guess not in word list
+      | not (isInList (language model) guessed) ->
         model <# do
           replyText (notInListMessage (language model))
-      | guessed == target ->                                   -- correct guess
+      | guessed == target ->
         let
           newGuesses = guesslist ++ [guessed]
           allFeedback = T.intercalate (pack "\n") $
@@ -140,7 +149,7 @@ handleGuess model guessedRaw =
           reply $
             (toReplyMessage (allFeedback <> gameWonMessage (language model)))
               { replyMessageReplyMarkup = Just (Telegram.SomeReplyKeyboardMarkup (wordleKeyboard (language model))) }
-      | otherwise ->                                           -- wrong guess
+      | otherwise ->
         let
           newGuesses = guesslist ++ [guessed]
           allFeedback = T.intercalate (pack "\n") $
@@ -148,7 +157,7 @@ handleGuess model guessedRaw =
                     newGuesses
                     (map (`getColorFeedback` target) newGuesses)
         in
-          if cnt <= 1                                            -- no more tries left
+          if cnt <= 1
             then model { gameState = Sleep } <# do
               reply $
                 (toReplyMessage (allFeedback <> noMoreTriesMessage (language model) <> target))
@@ -160,37 +169,34 @@ handleGuess model guessedRaw =
 getColorFeedback :: Text -> Text -> Text
 getColorFeedback guessed correct =
   let
-    greenSticker = pack "🟩"
-    yellowSticker = pack "🟨"
-    graySticker = pack "⬜"
-
-    -- mark greens and collect letters not green
+    -- Mark greens and collect non-green letters from the correct word
     greensAndRemainder :: [Char] -> [Char] -> ([Char], [Char])
     greensAndRemainder [] [] = ([], [])
     greensAndRemainder (g:gs) (c:cs)
-      | g == c    = let (gsRes, rem) = greensAndRemainder gs cs
-                    in ('G':gsRes, rem)
-      | otherwise = let (gsRes, rem) = greensAndRemainder gs cs
-                    in ('B':gsRes, c:rem)
+      | g == c    = ('G' : res, rem)
+      | otherwise = ('B' : res, c : rem)
+      where
+        (res, rem) = greensAndRemainder gs cs
 
-    -- remove first occurrence of a letter from list
-    removeFirst :: Eq a => a -> [a] -> [a]
+    -- Remove the first occurrence of a letter from a list
+    removeFirst :: Char -> [Char] -> [Char]
     removeFirst _ [] = []
     removeFirst x (y:ys)
       | x == y    = ys
       | otherwise = y : removeFirst x ys
 
-    -- assign colors: green, yellow or gray based on guessed letters and remainder
+    -- Assign stickers based on guess, green marks, and remaining letters
     yellows :: [Char] -> [Char] -> [Char] -> [Text]
     yellows [] [] _ = []
     yellows (g:gs) (m:ms) rem
-      | m == 'G'     = greenSticker : yellows gs ms rem
-      | g `elem` rem = yellowSticker : yellows gs ms (removeFirst g rem)
-      | otherwise    = graySticker : yellows gs ms rem
+      | m == 'G'     = pack "🟩" : yellows gs ms rem
+      | g `elem` rem = pack "🟨" : yellows gs ms (removeFirst g rem)
+      | otherwise    = pack "⬜" : yellows gs ms rem
 
     (greenMarks, remainder) = greensAndRemainder (unpack guessed) (unpack correct)
     feedback = yellows (unpack guessed) greenMarks remainder
   in T.concat feedback
+
 
 -- keyboard for difficulty selection
 difficultyKeyboard :: Telegram.ReplyKeyboardMarkup

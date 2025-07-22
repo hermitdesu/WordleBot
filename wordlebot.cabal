@@ -24,9 +24,6 @@ source-repository head
 
 library
   exposed-modules:
-      Database.Migrations
-      Database.Pool
-      Database.User
       Handlers
       Main
       Messages
@@ -55,9 +52,6 @@ library
 executable wordlebot-exe
   main-is: Main.hs
   other-modules:
-      Database.Migrations
-      Database.Pool
-      Database.User
       Handlers
       Messages
       Types
